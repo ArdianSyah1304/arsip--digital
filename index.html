@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArsipKu Premium - Ardiansyah System</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #2563eb; --accent: #3b82f6; --success: #10b981;
+            --danger: #ef4444; --warning: #f59e0b; --dark: #0f172a;
+            --light: #ffffff; --bg: #f8fafc; --gray: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg); color: var(--dark); overflow-x: hidden; }
+
+        /* UI Kit */
+        .btn-main { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-main:active { transform: scale(0.98); }
+        .form-control { width: 100%; padding: 12px 16px; border: 1.5px solid var(--gray); border-radius: 12px; margin-bottom: 1rem; outline: none; font-size: 1rem; transition: 0.3s; }
+        .form-control:focus { border-color: var(--primary); }
+        .card { background: white; padding: 1.2rem; border-radius: 20px; border: 1px solid var(--gray); margin-bottom: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+
+        /* Sidebar System */
+        .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: white; z-index: 2000; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); padding: 2rem 1.5rem; display: flex; flex-direction: column; border-right: 1px solid var(--gray); }
+        .sidebar.active { left: 0; }
+        .sidebar-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); display: none; z-index: 1999; backdrop-filter: blur(4px); }
+        .sidebar-overlay.active { display: block; }
+        
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; color: #64748b; text-decoration: none; border-radius: 12px; margin-bottom: 8px; font-weight: 600; cursor: pointer; }
+        .nav-item:hover, .nav-item.active { background: #eff6ff; color: var(--primary); }
+        .nav-item.logout { margin-top: auto; color: var(--danger); background: #fff1f2; }
+
+        /* Header */
+        .mobile-header { position: sticky; top: 0; background: white; padding: 15px 20px; border-bottom: 1px solid var(--gray); display: flex; align-items: center; justify-content: space-between; z-index: 1000; }
+
+        /* Login */
+        #login-page { height: 100vh; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle at top right, #1e40af, #0f172a); padding: 20px; }
+        .login-card { background: white; padding: 2.5rem; border-radius: 32px; width: 100%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; }
+
+        /* User Grid */
+        .user-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 20px; }
+        .doc-item { background: white; padding: 20px; border-radius: 24px; text-align: center; border: 1px solid var(--gray); transition: 0.3s; }
+        .doc-item:hover { transform: translateY(-5px); border-color: var(--primary); }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 10000; backdrop-filter: blur(5px); }
+        .custom-modal { background: white; padding: 2rem; border-radius: 28px; width: 90%; max-width: 450px; }
+    </style>
+</head>
+<body>
+
+<div id="modal-box" class="modal-overlay">
+    <div class="custom-modal" id="modal-inner"></div>
+</div>
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebars()"></div>
+
+<section id="login-page">
+    <div class="login-card">
+        <div style="background: var(--primary); width: 70px; height: 70px; border-radius: 22px; margin: 0 auto 1.5rem; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);">
+            <i data-lucide="archive" size="36"></i>
+        </div>
+        <h2 style="font-weight: 800; font-size: 1.8rem;">ArsipKu</h2>
+        <p style="color: #64748b; margin-bottom: 2rem;">Silahkan Login untuk Melanjutkan</p>
+        
+        <input type="text" id="log-name" class="form-control" placeholder="Nama Lengkap">
+        <div id="wa-field" style="display:none">
+            <input type="number" id="log-wa" class="form-control" placeholder="Nomor WhatsApp">
+        </div>
+        <button class="btn-main" onclick="processLogin()">Masuk <i data-lucide="arrow-right" size="18"></i></button>
+    </div>
+</section>
+
+<section id="admin-view" style="display:none">
+    <header class="mobile-header">
+        <button onclick="toggleSidebar('sidebar-adm')" style="background:none; border:none; cursor:pointer;"><i data-lucide="more-vertical"></i></button>
+        <strong style="font-weight: 800; letter-spacing: 1px;">ADMIN PANEL</strong>
+        <div style="width:24px;"></div>
+    </header>
+
+    <aside class="sidebar" id="sidebar-adm">
+        <h2 style="font-weight: 800; color: var(--primary); margin-bottom: 2rem;">ArsipKu</h2>
+        <div class="nav-item active" onclick="navTo('adm-home', this, 'adm')"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+        <div class="nav-item" onclick="navTo('adm-arsip', this, 'adm')"><i data-lucide="file-plus"></i> Kelola Arsip</div>
+        <div class="nav-item" onclick="navTo('adm-pesan', this, 'adm')"><i data-lucide="message-square"></i> Pesan Bantuan</div>
+        <div class="nav-item" onclick="navTo('adm-setting', this, 'adm')"><i data-lucide="settings"></i> Pengaturan</div>
+        <div class="nav-item logout" onclick="location.reload()"><i data-lucide="log-out"></i> Keluar</div>
+    </aside>
+
+    <main style="padding: 20px;">
+        <div id="adm-home" class="sec-adm">
+            <h3 id="greet-adm" style="font-weight: 800; margin-bottom: 20px;">Halo, Admin</h3>
+            <div class="card" style="background: var(--dark); color: white; border: none; position: relative; overflow: hidden;">
+                <div style="position:relative; z-index: 2;">
+                    <p style="font-size: 0.8rem; opacity: 0.7;">Bagi Link ke User (Otomatis ke Dashboard)</p>
+                    <button onclick="copyAppLink()" class="btn-main" style="background: var(--primary); margin-top: 12px; width: auto; padding: 10px 20px;">
+                        <i data-lucide="copy" size="16"></i> Salin Link Aplikasi
+                    </button>
+                </div>
+                <i data-lucide="globe" style="position:absolute; right:-20px; bottom:-20px; width:120px; height:120px; opacity:0.1; color:white;"></i>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                <div class="card" style="background: var(--primary); color: white; border: none;">
+                    <small>Arsip Terupload</small><h2 id="st-a">0</h2>
+                </div>
+                <div class="card">
+                    <small>Pesan User</small><h2 id="st-p">0</h2>
+                </div>
+            </div>
+            <div class="card"><canvas id="myChart" style="max-height:220px;"></canvas></div>
+        </div>
+
+        <div id="adm-arsip" class="sec-adm" style="display:none">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
+                <h3 style="font-weight: 800;">Data Arsip</h3>
+                <button onclick="openModalArsip()" class="btn-main" style="width:auto; padding:8px 15px; font-size:0.8rem;">+ Upload</button>
+            </div>
+            <div id="admin-list"></div>
+        </div>
+
+        <div id="adm-pesan" class="sec-adm" style="display:none">
+            <h3 style="font-weight:800; margin-bottom:15px;">Daftar Pesan</h3>
+            <div id="list-pesan"></div>
+        </div>
+
+        <div id="adm-setting" class="sec-adm" style="display:none">
+            <h3 style="font-weight:800; margin-bottom:15px;">Pengaturan Sistem</h3>
+            <div class="card">
+                <label style="font-size:0.8rem; font-weight:600;">Nama Aplikasi</label>
+                <input type="text" id="set-appname" class="form-control" value="ArsipKu" onchange="updateAppName(this.value)">
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <button class="btn-main" onclick="exportData()" style="background:#f1f5f9; color:var(--dark); box-shadow:none;"><i data-lucide="download"></i> Backup</button>
+                    <button class="btn-main" onclick="triggerRestore()" style="background:#f1f5f9; color:var(--dark); box-shadow:none;"><i data-lucide="upload"></i> Restore</button>
+                </div>
+                <input type="file" id="restore-file" style="display:none" onchange="processRestore(this)">
+                <button class="btn-main" onclick="resetAll()" style="background:var(--danger); margin-top:15px;"><i data-lucide="refresh-cw"></i> Reset Total</button>
+            </div>
+        </div>
+    </main>
+</section>
+
+<section id="user-view" style="display:none">
+    <header class="mobile-header">
+        <button onclick="toggleSidebar('sidebar-usr')" style="background:none; border:none; cursor:pointer;"><i data-lucide="more-vertical"></i></button>
+        <strong id="user-header-name" style="color: var(--primary); font-weight: 800;">ARSIPKU</strong>
+        <div style="width:24px;"></div>
+    </header>
+
+    <aside class="sidebar" id="sidebar-usr">
+        <h2 class="app-name-display" style="font-weight: 800; color: var(--primary); margin-bottom: 2rem;">ArsipKu</h2>
+        <div class="nav-item active"><i data-lucide="folder"></i> Dashboard Dokumen</div>
+        <div class="nav-item logout" onclick="location.reload()"><i data-lucide="log-out"></i> Keluar</div>
+    </aside>
+
+    <main style="padding: 20px;">
+        <h3 id="greet-usr" style="font-weight: 800;">Selamat Datang</h3>
+        <p style="color:#64748b; font-size:0.9rem; margin-bottom: 20px;">Silahkan unduh dokumen resmi di bawah ini.</p>
+        <div id="user-grid" class="user-grid"></div>
+        
+        <div class="card" style="margin-top:30px; border-style:dashed; background:#f8fafc;">
+            <h4 style="margin-bottom:10px;"><i data-lucide="help-circle" size="18" style="vertical-align:middle"></i> Bantuan?</h4>
+            <textarea id="msg-input" class="form-control" rows="3" placeholder="Tulis pesan Anda untuk admin..."></textarea>
+            <button class="btn-main" onclick="submitMessage()">Kirim Pesan</button>
+        </div>
+    </main>
+</section>
+
+<script>
+    // DATA PERMANEN
+    const ADMINS = ['ardiansyah', 'sudarte', 'mala', 'jumadil'];
+    let db_arsip = JSON.parse(localStorage.getItem('db_arsip')) || [];
+    let db_pesan = JSON.parse(localStorage.getItem('db_pesan')) || [];
+    let app_config = JSON.parse(localStorage.getItem('app_config')) || { name: 'ArsipKu' };
+    let activeUser = "";
+
+    // CEK REDIRECT LINK USER
+    window.onload = () => {
+        const params = new URLSearchParams(window.location.search);
+        if(params.get('view') === 'user') {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('user-view').style.display = 'block';
+            renderUser();
+        }
+        applyConfig();
+        lucide.createIcons();
+    };
+
+    // SISTEM LOGIN
+    document.getElementById('log-name').addEventListener('input', function(e) {
+        const val = e.target.value.toLowerCase().trim();
+        document.getElementById('wa-field').style.display = (val && !ADMINS.includes(val)) ? 'block' : 'none';
+    });
+
+    function processLogin() {
+        const name = document.getElementById('log-name').value.toLowerCase().trim();
+        const wa = document.getElementById('log-wa').value;
+
+        if(!name) return alert("Isi nama Anda!");
+
+        if(ADMINS.includes(name)) {
+            activeUser = name;
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('admin-view').style.display = 'block';
+            document.getElementById('greet-adm').innerText = "Halo, " + name.charAt(0).toUpperCase() + name.slice(1);
+            renderAdmin();
+            initChart();
+        } else {
+            if(!wa) return alert("User baru wajib masukkan No WhatsApp!");
+            activeUser = name;
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('user-view').style.display = 'block';
+            document.getElementById('greet-usr').innerText = "Halo, " + name;
+            renderUser();
+        }
+    }
+
+    // SIDEBAR LOGIC
+    function toggleSidebar(id) {
+        document.getElementById(id).classList.toggle('active');
+        document.getElementById('overlay').classList.toggle('active');
+    }
+    function closeSidebars() {
+        document.querySelectorAll('.sidebar').forEach(s => s.classList.remove('active'));
+        document.getElementById('overlay').classList.remove('active');
+    }
+
+    function navTo(id, el, type) {
+        const cls = type === 'adm' ? '.sec-adm' : '.sec-usr';
+        document.querySelectorAll(cls).forEach(s => s.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        el.classList.add('active');
+        closeSidebars();
+    }
+
+    // ADMIN CRUD
+    function openModalArsip() {
+        document.getElementById('modal-box').style.display = 'flex';
+        document.getElementById('modal-inner').innerHTML = `
+            <h3 style="margin-bottom:15px; font-weight:800;">Upload Dokumen Baru</h3>
+            <input type="text" id="in-n" class="form-control" placeholder="Nama File (Contoh: Laporan Januari)">
+            <input type="file" id="in-f" class="form-control">
+            <button class="btn-main" onclick="saveNewArsip()">Simpan ke Database</button>
+            <button class="btn-main" style="background:#eee; color:black; margin-top:10px; box-shadow:none;" onclick="closeModal()">Batal</button>
+        `;
+    }
+
+    function saveNewArsip() {
+        const n = document.getElementById('in-n').value;
+        const f = document.getElementById('in-f').files[0];
+        if(!n || !f) return alert("Mohon lengkapi data!");
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            db_arsip.push({ id: Date.now(), nama: n, raw: e.target.result, tipe: f.type.includes('pdf') ? 'PDF' : 'IMAGE' });
+            localStorage.setItem('db_arsip', JSON.stringify(db_arsip));
+            renderAdmin();
+            closeModal();
+        };
+        reader.readAsDataURL(f);
+    }
+
+    function renderAdmin() {
+        document.getElementById('admin-list').innerHTML = db_arsip.map(a => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                <div><strong>${a.nama}</strong><br><small style="color:var(--primary)">Format: ${a.tipe}</small></div>
+                <button onclick="delArsip(${a.id})" style="border:none; background:#fee2e2; color:var(--danger); padding:10px; border-radius:12px;"><i data-lucide="trash-2" size="18"></i></button>
+            </div>
+        `).join('');
+        
+        document.getElementById('list-pesan').innerHTML = db_pesan.length ? db_pesan.map(p => `
+            <div class="card"><strong>${p.nama}</strong><p style="font-size:0.85rem; color:#475569; margin-top:5px;">${p.teks}</p></div>
+        `).reverse().join('') : '<p style="text-align:center; color:#94a3b8;">Belum ada pesan bantuan.</p>';
+
+        document.getElementById('st-a').innerText = db_arsip.length;
+        document.getElementById('st-p').innerText = db_pesan.length;
+        lucide.createIcons();
+    }
+
+    function delArsip(id) { if(confirm('Hapus dokumen ini?')) { db_arsip = db_arsip.filter(x => x.id != id); localStorage.setItem('db_arsip', JSON.stringify(db_arsip)); renderAdmin(); } }
+
+    // USER VIEW
+    function renderUser() {
+        document.getElementById('user-grid').innerHTML = db_arsip.map(a => `
+            <div class="doc-item">
+                <div style="font-size:2.5rem; margin-bottom:12px;">${a.tipe === 'PDF' ? '📄' : '🖼️'}</div>
+                <p style="font-size:0.8rem; font-weight:800; height:40px; overflow:hidden; margin-bottom:12px;">${a.nama}</p>
+                <a href="${a.raw}" download="${a.nama}" class="btn-main" style="text-decoration:none; font-size:0.75rem; padding:8px;">Unduh File</a>
+            </div>
+        `).join('');
+    }
+
+    function submitMessage() {
+        const t = document.getElementById('msg-input').value;
+        if(t) { db_pesan.push({ nama: activeUser || "User Tamu", teks: t }); localStorage.setItem('db_pesan', JSON.stringify(db_pesan)); alert("Pesan terkirim ke admin!"); document.getElementById('msg-input').value = ""; }
+    }
+
+    // UTILITIES
+    function copyAppLink() {
+        const url = window.location.origin + window.location.pathname + "?view=user";
+        navigator.clipboard.writeText(url).then(() => alert("Link DASHBOARD USER Berhasil Disalin!\nLink: " + url));
+    }
+
+    function updateAppName(val) { app_config.name = val; localStorage.setItem('app_config', JSON.stringify(app_config)); applyConfig(); }
+    function applyConfig() { 
+        document.querySelectorAll('.app-name-display').forEach(e => e.innerText = app_config.name);
+        document.getElementById('user-header-name').innerText = app_config.name.toUpperCase();
+    }
+
+    function exportData() {
+        const blob = new Blob([JSON.stringify({db_arsip, db_pesan, app_config})], {type: "application/json"});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "ArsipKu_Backup.json"; a.click();
+    }
+    function triggerRestore() { document.getElementById('restore-file').click(); }
+    function processRestore(input) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = JSON.parse(e.target.result);
+            if(data.db_arsip) {
+                db_arsip = data.db_arsip; db_pesan = data.db_pesan; app_config = data.app_config;
+                localStorage.setItem('db_arsip', JSON.stringify(db_arsip));
+                localStorage.setItem('db_pesan', JSON.stringify(db_pesan));
+                localStorage.setItem('app_config', JSON.stringify(app_config));
+                alert("Data berhasil dipulihkan!"); location.reload();
+            }
+        };
+        reader.readAsText(input.files[0]);
+    }
+
+    function resetAll() { if(confirm('PERINGATAN: Semua data arsip dan pesan akan dihapus permanen!')) { localStorage.clear(); location.reload(); } }
+    function closeModal() { document.getElementById('modal-box').style.display = 'none'; }
+    
+    function initChart() {
+        const ctx = document.getElementById('myChart').getContext('2d');
+        new Chart(ctx, { 
+            type: 'bar', 
+            data: { 
+                labels: ['Arsip', 'Pesan'], 
+                datasets: [{ label: 'Total Data', data: [db_arsip.length, db_pesan.length], backgroundColor: ['#2563eb', '#f59e0b'], borderRadius: 10 }] 
+            },
+            options: { plugins: { legend: { display: false } } }
+        });
+    }
+</script>
+</body>
+</html>
